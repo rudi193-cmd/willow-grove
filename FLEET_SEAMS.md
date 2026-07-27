@@ -18,16 +18,69 @@ survey and carry citations but have not been independently re-checked.
 
 ---
 
+## Break 0 — ownership is CONTESTED, and everything below follows from it
+
+**The two repos document opposite directions of migration, and both are live.**
+
+`willow-2.0/README.md`:
+
+> **Canonical repo:** `willow-1.9`, **`willow-mcp`**, `willow-nest`, and
+> `willow-seed` **are archived — everything ships here now.**
+
+`willow-mcp/docs/repatriation/SESSION_HANDOFF.md`:
+
+> It started as a migration audit — **willow-2.0 → willow-mcp**, inventory the
+> gap, dedupe
+
+willow-2.0 declares willow-mcp archived. willow-mcp merged **PR #190 on
+2026-07-27** and holds the plan for moving things *out of* willow-2.0, which was
+itself committed to on 2026-07-25. Neither is dormant.
+
+And the consolidation is a **plan, not a record** —
+`willow-mcp/docs/repatriation/CONSOLIDATION_MATRIX.md`, generated 2026-07-18
+over 24 repos and 28,825 pieces, with **no completion markers on any row**:
+
+| verdict | clusters | versions |
+|---------|---------:|---------:|
+| REVIEW | 162 | 406 |
+| FOLD→mcp | 72 | 184 |
+| STANDALONE-LIB | 54 | 166 |
+| APP-LOCAL | 1 | 4 |
+
+`list_channels` alone has 26 versions across three repos.
+
+**So the ownership column below records where code currently lives, not who is
+entitled to own it.** Every break in this document is a symptom of this one: two
+live repos each believing the other is not the destination, so neither takes a
+change the other would have to accept.
+
+- The **split-brain human queue** (Break 1) exists because willow-mcp will not
+  migrate the shared Postgres unilaterally — from its side that database is not
+  its to change; from willow-2.0's side willow-mcp is archived and should not be
+  writing at all.
+- The **`routing_decisions` race** (Break 2) is two live repos both creating one
+  table, each believing itself authoritative.
+- The **duplicate Grove inside willow-2.0** is not an accident — it is willow-2.0
+  acting as the canonical home while Grove also ships separately.
+
+**This is the decision that unblocks the rest.** Until "which repo owns the fleet
+schema" has an answer, every fix here has two plausible homes and no owner.
+
+---
+
 ## The map
 
-| Thing | Declared in | Created / written in | Read by |
-|-------|-------------|----------------------|---------|
-| `public.human_required_queue` | — | **willow-2.0** | Grove |
-| `human_required` (SQLite collection) | — | **willow-mcp** | *nobody* |
-| `grove.*` (channels, messages, message_flags, agent_cursors) | — | **willow-2.0** *and* Grove, independently | Grove, willow-2.0 |
-| `willow.routing_decisions` | Grove `schema.sql` (stub) | **both**, racing | Grove |
-| `public.routing_decisions` | — | **willow-2.0** | willow-2.0 |
-| `frank_ledger` | — | **willow-2.0** governance schema | willow-mcp appends |
+Ownership below is **contested** wherever willow-2.0 and willow-mcp both appear —
+see Break 0. Read this as *where the code is*, not *where it belongs*.
+
+| Thing | Declared in | Where it currently lives | Read by |
+|-------|-------------|--------------------------|---------|
+| `public.human_required_queue` | — | willow-2.0 *(contested)* | Grove |
+| `human_required` (SQLite collection) | — | willow-mcp *(contested)* | *nobody* |
+| `grove.*` (channels, messages, message_flags, agent_cursors) | — | willow-2.0 *and* Grove, independently *(contested)* | Grove, willow-2.0 |
+| `willow.routing_decisions` | Grove `schema.sql` (stub) | **both**, racing *(contested)* | Grove |
+| `public.routing_decisions` | — | willow-2.0 *(contested)* | willow-2.0 |
+| `frank_ledger` | — | willow-2.0 governance schema *(contested)* | willow-mcp appends |
 | `frank_write` permission | — | **willow-mcp** `gate.py` | — |
 | App manifests | **safe-app-store** | **willow-mcp** resolves via `whoami` | — |
 
@@ -269,11 +322,14 @@ store of "rings of lessons" with no relation to the Grove app. Grep carefully.
 
 ## Open questions
 
+0. **Which repo is canonical?** willow-2.0 and willow-mcp each document the
+   other as the non-destination (Break 0). Nothing else here can be resolved
+   first, because every fix has two plausible homes until this does.
 1. Should willow-mcp's SOIL queue forward into Postgres, or should Grove read
    both? B-28 says willow-mcp will not migrate the shared DB unilaterally — so
    this needs an operator decision, not a patch.
 2. Who owns `grove.*` after consolidation? Two independent bootstraps currently
-   race.
+   race, and Break 0 means there is no agreed answer to appeal to.
 3. Should `safe-app-store` gain enforcement, or should manifests move to where
    the gate is?
 4. Does Grove's `schema.sql` still need to exist, given `pg_bridge` is

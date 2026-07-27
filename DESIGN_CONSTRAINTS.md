@@ -142,7 +142,12 @@ A fresh public build makes **three** unless the ownership question is settled
 first.
 
 **Check.** For each subsystem, name the one repo that owns it before writing it.
-If the answer is "two", stop and resolve that first. `NESTOR_ON_GROVE.md` (in
+If the answer is "two", stop and resolve that first — and note that today the
+answer is *"two, and they disagree"*: willow-2.0's README declares willow-mcp
+archived while willow-mcp holds the plan to migrate out of willow-2.0, and both
+are actively committed to ([`FLEET_SEAMS.md` Break 0](FLEET_SEAMS.md#break-0--ownership-is-contested-and-everything-below-follows-from-it)).
+Until that is settled, "which repo owns it" has no answer to appeal to, and a
+fresh build inherits the ambiguity rather than escaping it. `NESTOR_ON_GROVE.md` (in
 this repo, when the survey completes) measures which duplicates are genuinely
 the same code versus which only look alike — use it rather than eyeballing.
 

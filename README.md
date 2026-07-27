@@ -24,7 +24,10 @@ half a job and the halves do not meet. It owns no runtime code and no schema.
 
 ## Why a separate repo
 
-The findings in `FLEET_SEAMS.md` are not any one component's bug. The
+The findings in `FLEET_SEAMS.md` are not any one component's bug — and the root
+one is that **willow-2.0 and willow-mcp each document the other as archived or
+superseded**, so schema ownership across the fleet is contested rather than
+settled. The
 human-required queue is split across `willow-2.0` and `willow-mcp`; the
 `routing_decisions` race is between `willow-2.0` and `safe-app-willow-grove`;
 the manifest ACL is declared in `safe-app-store` and enforced in `willow-mcp`.
