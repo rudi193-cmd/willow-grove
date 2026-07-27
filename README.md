@@ -5,10 +5,13 @@
 This repo holds cross-repo findings — the places where two components each do
 half a job and the halves do not meet. It owns no runtime code and no schema.
 
-> **This is not the Grove app.** The running Textual TUI dashboard is
+> **Status: no app here yet.** This repo is intended to become the public home
+> of Willow Grove, as a **fresh build** — not a transplant of the current
+> private implementation. Until that lands, it holds fleet-level notes, because
+> no single component repo can own a finding that spans four of them.
+>
+> The Grove that runs today is
 > [`safe-app-willow-grove`](https://github.com/rudi193-cmd/safe-app-willow-grove).
-> This repo was an empty reserved name; it is being used for fleet-level notes
-> because no single component repo can own a finding that spans four of them.
 > See [Naming](FLEET_SEAMS.md#naming) — there are four grove-ish names in play
 > and the store's own spec already flags the confusion.
 
