@@ -283,6 +283,31 @@ store of "rings of lessons" with no relation to the Grove app. Grep carefully.
 
 ## Provenance and confidence
 
+**Reproduced against a live PostgreSQL 16 instance** (2026-07-27, Grove at
+`980aca5`, deps installed from its own `requirements.txt`, schema loaded with its
+own `schema.sql` exactly as its README instructs):
+
+```
+$ createdb willow_20 && psql -d willow_20 -f schema.sql
+$ python -c "from panes.human import fetch_human_queue; print(fetch_human_queue())"
+grove_reader.human_required_queue: relation "public.human_required_queue" does not exist
+[]
+```
+
+The pane therefore renders `Human — required actions  ✓ queue clear` /
+`nothing awaiting you`. **This is not a failure mode — it is what a stock Grove
+install does.** The database is up and healthy; `grove.channels` queries fine.
+`human_required_queue` simply belongs to willow-2.0 (§Break 1) and Grove's own
+`schema.sql` does not create it, so a standalone Grove shows a permanent green
+check on the one surface whose stated purpose is that automation pauses until a
+human acts.
+
+Worse, the warning that *is* emitted reaches nobody: `grove_reader` logs to a
+module logger, and `app.py:37` routes logging to
+`~/.willow/grove_error.log` — a file, at DEBUG level, not the screen. So the
+operator sees a green tick and the explanation is in a log they have no reason
+to open.
+
 **Directly verified** (read or executed against the working tree):
 
 - Grove's `schema.sql` creates `channels`, `messages`, `message_flags`,
