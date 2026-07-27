@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Docs-only repo: no pip/npm manifest to track, so the only moving
+  # dependencies are the workflow actions themselves.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -1,0 +1,79 @@
+name: Tests
+
+# Fleet standard, adapted for a docs-only repo. willow-grove owns no runtime
+# code, so the substantive gate is doc-integrity (internal links + anchors
+# resolve) rather than an app test suite — but the job graph and the aggregate
+# "test" check are the same as every other fleet repo, so branch protection
+# reads identically.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Daily drift catcher, off the :00/:30 peak-load minutes — fleet pattern.
+    - cron: "57 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint tools
+        run: pip install ruff==0.15.0
+
+      - name: Ruff (enforced — the tools/tests that guard the docs stay clean)
+        run: ruff check tools tests
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Doc integrity (internal links and anchors resolve)
+        run: python tools/check_docs.py
+
+  test-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Floor and current — the doc checker is stdlib-only, runs anywhere.
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+  # Aggregate gate: branch protection requires a single check named "test"
+  # across the whole fleet. Green only when lint, docs, and every matrix leg are.
+  test:
+    needs: [lint, docs, test-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "lint, docs, and all matrix legs green"
