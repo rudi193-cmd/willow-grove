@@ -20,6 +20,7 @@ half a job and the halves do not meet. It owns no runtime code and no schema.
 | Document | What it is |
 |----------|------------|
 | [`FLEET_SEAMS.md`](FLEET_SEAMS.md) | The map: who owns which table, where declaration and enforcement diverge, and four breaks with evidence |
+| [`DESIGN_CONSTRAINTS.md`](DESIGN_CONSTRAINTS.md) | What the fresh build must not repeat — each rule tied to the seam it came from, with a way to check compliance |
 
 ## Why a separate repo
 
