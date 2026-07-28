@@ -80,17 +80,18 @@ toward the second — see Break 1.
 
 ## The map
 
-Ownership below is **contested** wherever willow-2.0 and willow-mcp both appear —
-see Break 0. Read this as *where the code is*, not *where it belongs*.
+Read this as *where the code is today*, not *where it belongs*. Rows marked
+*(not yet migrated)* live in willow-2.0 and are destined for willow-mcp per
+Break 0 — the direction is settled, the move is not done.
 
 | Thing | Declared in | Where it currently lives | Read by |
 |-------|-------------|--------------------------|---------|
-| `public.human_required_queue` | — | willow-2.0 *(contested)* | Grove |
-| `human_required` (SQLite collection) | — | willow-mcp *(contested)* | *nobody* |
-| `grove.*` (channels, messages, message_flags, agent_cursors) | — | willow-2.0 *and* Grove, independently *(contested)* | Grove, willow-2.0 |
-| `willow.routing_decisions` | Grove `schema.sql` (stub) | **both**, racing *(contested)* | Grove |
-| `public.routing_decisions` | — | willow-2.0 *(contested)* | willow-2.0 |
-| `frank_ledger` | — | willow-2.0 governance schema *(contested)* | willow-mcp appends |
+| `public.human_required_queue` | — | willow-2.0 *(not yet migrated)* | Grove |
+| `human_required` (SQLite collection) | — | willow-mcp *(not yet migrated)* | *nobody* |
+| `grove.*` (channels, messages, message_flags, agent_cursors) | — | willow-2.0 *and* Grove, independently *(not yet migrated)* | Grove, willow-2.0 |
+| `willow.routing_decisions` | Grove `schema.sql` (stub) | **both**, racing *(not yet migrated)* | Grove |
+| `public.routing_decisions` | — | willow-2.0 *(not yet migrated)* | willow-2.0 |
+| `frank_ledger` | — | willow-2.0 governance schema *(not yet migrated)* | willow-mcp appends |
 | `frank_write` permission | — | **willow-mcp** `gate.py` | — |
 | App manifests | **safe-app-store** | **willow-mcp** resolves via `whoami` | — |
 
@@ -120,15 +121,15 @@ the repo being migrated out of, and the destination's queue has no reader yet.
 That is why a stock Grove shows an empty pane: not a bug in either queue, but a
 consumer still pointed at the old world.
 
-**willow-2.0 (works).** Owns the table and is the reason Grove's pane shows
-anything at all:
+**willow-2.0 — the origin, still running.** Owns the Postgres table and is the
+only reason Grove's pane ever shows anything:
 
 - DDL — `willow-2.0/core/pg_bridge.py:380` (repeated in `_MIGRATIONS` at `:503`)
 - `INSERT` — `willow-2.0/core/human_required.py:178`
 - `UPDATE` — `willow-2.0/core/human_required.py:289`
 - Agent-facing MCP tool `human_required_queue_enqueue` — `willow-2.0/sap/sap_mcp.py:6431`
 
-**willow-mcp (orphaned).** Implements the same primitive against SOIL/SQLite:
+**willow-mcp — the port, with no consumer yet.** Same primitive, homed on SOIL:
 
 - `QUEUE_COLLECTION = "human_required"` — `willow-mcp/src/willow_mcp/human_loop.py:44`
   (note: no `_queue` suffix)
@@ -136,19 +137,21 @@ anything at all:
 - backing store is SQLite — `willow-mcp/src/willow_mcp/db.py:77`
 - MCP tool `human_required_enqueue` — `willow-mcp/src/willow_mcp/server.py:4485`
 
-**The divergence is deliberate and documented**, which is why this is a seam and
-not a bug — `willow-mcp/src/willow_mcp/human_loop.py:16-22`:
+**Why the port chose a different datastore** —
+`willow-mcp/src/willow_mcp/human_loop.py:16-22`:
 
 > SOIL, not the fleet Postgres. willow-2.0 backs these with Postgres tables
 > (`human_required`, `human_attestations`) and `core.pg_bridge`. Porting that
 > verbatim would drag a schema migration into the *shared fleet database* — the
 > operator-gated act willow-mcp refuses to take unilaterally (B-28).
 
-The principle is sound. The consequence was not intended: **an agent escalating
-through willow-mcp never appears on the one surface built to show escalations.**
+That is a deliberate, defensible choice — and it is also the thing that leaves a
+gap during the migration, because **an agent escalating through the port reaches
+no surface a human is watching.** Not because the port is wrong, but because
+nothing has been repointed at it yet.
 
-The vocabularies have drifted too, so pointing willow-mcp at Postgres would not
-be sufficient on its own:
+The vocabularies have drifted too, so repointing Grove is not purely a
+connection-string change:
 
 | willow-2.0 (`core/human_required.py:13-18`) | willow-mcp (`server.py:4485`) |
 |---|---|
@@ -162,8 +165,14 @@ Grove renders `kind.replace("_", " ")`
 (`safe-app-willow-grove/panes/human.py:118`), so it is built for willow-2.0's
 spelling.
 
-**Impact.** The human sees half the fleet's escalations and gets no indication
-the other half exists.
+**Impact.** During the migration the human sees only the escalations still
+arriving through the origin, with no indication that a second queue exists — and
+on a standalone Grove, which never gets willow-2.0's schema, they see nothing at
+all behind a green tick.
+
+**The concrete task** is repointing Grove at the port (or at both, labelled),
+plus reconciling the `kind` vocabulary. Neither is blocked on the ownership
+question — the direction is settled.
 
 **Re-verify with**
 `grep -rn "human_required" willow-mcp/src/willow_mcp/human_loop.py willow-2.0/core/human_required.py`
