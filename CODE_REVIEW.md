@@ -190,20 +190,36 @@ by making calls that get denied — and `receipts.tail()` / `since()` filter on
 It also reintroduces the unbounded-arbitrary-string vector that L-DOS-01 closed
 for `_buckets`, this time as rows in an append-only chained DB.
 
-### P1 — `rechain()` and `_migrate_backfill()` launder tampering evidence
+### P2 — `rechain()` launders tampering evidence, but is operator-run
 
-`governance_ledger.py:161-189` rewrites `prev_hash`/`hash` in place for any row
-whose stored hash does not match the recomputed digest. That predicate is
+**Corrected 2026-07-28, and downgraded from P1.** The original entry paired
+`rechain()` with `receipts._migrate_backfill()` and called the second one worse.
+Both halves of that were overstated; the corrections were raised on
+[willow-mcp#197](https://github.com/rudi193-cmd/willow-mcp/pull/197) and verified
+against the working tree.
+
+`governance_ledger.py:161-189` does rewrite `prev_hash`/`hash` in place for any
+row whose stored hash does not match the recomputed digest, and that predicate is
 indistinguishable from "was tampered with": run it on an edited chain and
 `verify()` returns `{"valid": True}` afterwards, with `{"migrated": N}` reading
-as successful maintenance.
+as successful maintenance. **[verified]**
 
-`receipts.py:77-103` has the same shape and runs **on every `ReceiptLog()`
-construction** — i.e. every server start. `receipts.py:34-41` is honest that the
-chain's evidence only holds within the OS-ownership boundary; that is true for
-*detection*, but an unconditional auto-repair converts "chain broken" into "chain
-fine" without ever emitting the intermediate state, which is the one thing the
-chain exists to produce.
+What the original entry got wrong:
+
+- **`rechain()` has no production caller.** `grep -rn "rechain" src/` finds the
+  definition and one comment, nothing else. It is an operator-run v1→v2
+  migration, not ambient risk — which is why this is now P2. Worth a
+  `chain_rehashed` receipt naming the rows it touched; not worth alarm.
+- **`receipts._migrate_backfill()` does not launder tampering at all.** Its
+  predicate is `if entry_hash is None:` (`receipts.py:93`) — backfill only. A row
+  whose *data* was edited while its hash stayed intact is left broken, and
+  `verify()` reports it. Calling it "the same shape, and worse because it runs
+  every start" was wrong. The narrower true claim: an attacker who can also NULL
+  the chain columns gets them re-chained clean on the next construction — a
+  strictly more capable attacker than the one the original entry implied.
+
+`receipts.py:34-41` is honest that the chain's evidence only holds within the
+OS-ownership boundary, and that honesty holds up.
 
 ### P1 — `frank_append` has no forced attribution
 
@@ -677,6 +693,22 @@ original.** The willow-2.0 lane-scope item above is a live example of the
 correction that spot-checking produces — the survey framed it as a general
 security bypass; reading the call sites narrowed it to one search path and
 revealed it was documented intent.
+
+**Corrections since publication.** Three so far, all in the same direction —
+the survey overstated, and reading the code narrowed it:
+
+| Claim | Correction | Found by |
+|---|---|---|
+| `web_read` needs seat-guard coverage | Wrong. Both web tools call `web_egress.egress_denial()`, which requires `web_net`, and `web_net` is in no group — not even `full_access`. `web_read` grants the tool, never the egress. | willow-mcp#197 |
+| `receipts._migrate_backfill()` launders tampering | Wrong. Predicate is `entry_hash IS NULL`, backfill-only; an ordinary tamper survives as `broken_at`. | willow-mcp#197 |
+| `rechain()` is ambient risk | Overstated. No production caller; operator-run migration. Downgraded to P2. | willow-mcp#197 |
+
+That is the same failure mode recorded in
+[`FLEET_SEAMS.md`](FLEET_SEAMS.md#provenance-and-confidence): a read-only survey
+reports what a call site *looks* like, and cannot tell a guarded path from an
+unguarded one, or a live risk from a migration nobody runs. **Every correction so
+far has come from someone executing the code rather than reading it.** Prefer
+that over another survey pass.
 
 Spot-check before acting on any single item, and prefer the four in
 [What to do first](#what-to-do-first) — all four are verified.
