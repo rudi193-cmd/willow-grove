@@ -327,6 +327,14 @@ structural and never guessable — an answer is `sealed`, `draft`, or `pending`,
 and `pending` says *"nothing to offer"* rather than improvising. Grove needs the
 equivalent: *"could not reach the source"* must not collapse into *"clear"*.
 
+**It is not Grove's pattern — it is the fleet's.** A later per-repo review found
+the same shape in `safe-app-store` (a *missing* manifest rendering as "No special
+permissions required"), in `willow-2.0` (`sap/middleware.py:211-212` returns `[]`
+on any policy-load error, so every rate rule silently stops firing), and in
+`willow-mcp` (`oauth.py:77-83` turns a corrupt token store into an empty valid
+one). It also found the cure already written, in about six files across the same
+four repos. See [`CODE_REVIEW.md`](CODE_REVIEW.md#the-one-pattern).
+
 ---
 
 ## Naming

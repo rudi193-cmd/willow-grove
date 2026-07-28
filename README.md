@@ -21,13 +21,17 @@ half a job and the halves do not meet. It owns no runtime code and no schema.
 |----------|------------|
 | [`FLEET_SEAMS.md`](FLEET_SEAMS.md) | The map: who owns which table, where declaration and enforcement diverge, and four breaks with evidence |
 | [`DESIGN_CONSTRAINTS.md`](DESIGN_CONSTRAINTS.md) | What the fresh build must not repeat — each rule tied to the seam it came from, with a way to check compliance |
+| [`CODE_REVIEW.md`](CODE_REVIEW.md) | What is *inside* each repo: what to preserve, what is wrong, and what the MCP `2026-07-28` spec changes |
+| [`NESTOR_ON_GROVE.md`](NESTOR_ON_GROVE.md) | Measuring which fleet duplicates are genuinely the same code rather than only looking alike |
 
 ## Why a separate repo
 
-The findings in `FLEET_SEAMS.md` are not any one component's bug — and the root
-one is that **willow-2.0 and willow-mcp each document the other as archived or
-superseded**, so schema ownership across the fleet is contested rather than
-settled. The
+The findings in `FLEET_SEAMS.md` are not any one component's bug. The root one
+*was* that willow-2.0 and willow-mcp each documented the other as archived —
+resolved on 2026-07-28, when willow-2.0's README was corrected; the direction is
+**willow-2.0 → willow-mcp** and the remaining question is narrower (see
+[Break 0](FLEET_SEAMS.md#break-0--the-migration-has-a-direction-one-readme-has-not-caught-up)).
+What is left still spans repos: the
 human-required queue is split across `willow-2.0` and `willow-mcp`; the
 `routing_decisions` race is between `willow-2.0` and `safe-app-willow-grove`;
 the manifest ACL is declared in `safe-app-store` and enforced in `willow-mcp`.
