@@ -18,9 +18,13 @@ survey and carry citations but have not been independently re-checked.
 
 ---
 
-## Break 0 — ownership is CONTESTED, and everything below follows from it
+## Break 0 — the migration has a direction; one README has not caught up
 
-**The two repos document opposite directions of migration, and both are live.**
+**Intended direction, confirmed by the operator: all the good from `willow-2.0`
+moves into `willow-mcp` and its associated repos. willow-2.0 was a building
+block, not the destination.** The migration is *unfinished*, not disputed — but
+the artifacts still read as a dispute, which is what made this map get it wrong
+the first time.
 
 `willow-2.0/README.md`:
 
@@ -32,9 +36,14 @@ survey and carry citations but have not been independently re-checked.
 > It started as a migration audit — **willow-2.0 → willow-mcp**, inventory the
 > gap, dedupe
 
-willow-2.0 declares willow-mcp archived. willow-mcp merged **PR #190 on
-2026-07-27** and holds the plan for moving things *out of* willow-2.0, which was
-itself committed to on 2026-07-25. Neither is dormant.
+willow-2.0 declares willow-mcp archived — **that line is stale and now
+backwards**, and it is the single most misleading sentence in the fleet: it tells
+a reader (or an agent) that the destination repo is dead. willow-mcp merged
+**PR #190 on 2026-07-27** and holds the plan for moving things *out of*
+willow-2.0, which was itself committed to on 2026-07-25. Neither is dormant, but
+only one is the target.
+
+**Fixing that README line is the cheapest high-value change available here.**
 
 And the consolidation is a **plan, not a record** —
 `willow-mcp/docs/repatriation/CONSOLIDATION_MATRIX.md`, generated 2026-07-18
@@ -50,21 +59,22 @@ over 24 repos and 28,825 pieces, with **no completion markers on any row**:
 `list_channels` alone has 26 versions across three repos.
 
 **So the ownership column below records where code currently lives, not who is
-entitled to own it.** Every break in this document is a symptom of this one: two
-live repos each believing the other is not the destination, so neither takes a
-change the other would have to accept.
+entitled to own it** — and with the direction settled, "currently in willow-2.0"
+should be read as *not yet migrated*, not as *owned*.
 
-- The **split-brain human queue** (Break 1) exists because willow-mcp will not
-  migrate the shared Postgres unilaterally — from its side that database is not
-  its to change; from willow-2.0's side willow-mcp is archived and should not be
-  writing at all.
+- The **human queue** (Break 1) is not split-brain at all once the direction is
+  known — willow-mcp's copy is the *port*, and Grove is still reading the
+  original.
 - The **`routing_decisions` race** (Break 2) is two live repos both creating one
   table, each believing itself authoritative.
 - The **duplicate Grove inside willow-2.0** is not an accident — it is willow-2.0
   acting as the canonical home while Grove also ships separately.
 
-**This is the decision that unblocks the rest.** Until "which repo owns the fleet
-schema" has an answer, every fix here has two plausible homes and no owner.
+**The remaining decision is narrower than "who owns the schema".** It is: does
+willow-mcp take ownership of the shared fleet Postgres (lifting B-28 with
+operator consent), or does the fleet move off shared Postgres onto willow-mcp's
+SOIL store, and consumers get repointed? willow-mcp's own design leans hard
+toward the second — see Break 1.
 
 ---
 
@@ -90,15 +100,25 @@ wrong datastore. None of them fails loudly.
 
 ---
 
-## Break 1 — the human-required queue is split in two
+## Break 1 — Grove reads the legacy half of a migrated queue
 
-Two implementations of one concept, in different datastores, with different
-vocabularies. Neither knows about the other.
+**Corrected.** An earlier revision of this document called willow-mcp's copy
+"orphaned" and willow-2.0's the working one. That is backwards. willow-mcp's is
+**the port** — `willow-mcp/src/willow_mcp/human_loop.py:14-22`:
+
+> Two deliberate departures from the willow-2.0 original: **1. SOIL, not the
+> fleet Postgres.** willow-2.0 backs these with Postgres tables … **the port
+> homes them there.**
 
 ```
-willow-2.0  →  Postgres  public.human_required_queue   →  Grove reads it     ✓
-willow-mcp  →  SQLite    "human_required" collection   →  nothing reads it   ✗
+willow-2.0  →  Postgres  public.human_required_queue   →  Grove reads it   (legacy origin)
+willow-mcp  →  SOIL      "human_required" collection   →  nothing reads it (the port)
 ```
+
+So nothing is orphaned — **Grove has simply not been repointed.** It is wired to
+the repo being migrated out of, and the destination's queue has no reader yet.
+That is why a stock Grove shows an empty pane: not a bug in either queue, but a
+consumer still pointed at the old world.
 
 **willow-2.0 (works).** Owns the table and is the reason Grove's pane shows
 anything at all:
@@ -322,12 +342,14 @@ store of "rings of lessons" with no relation to the Grove app. Grep carefully.
 
 ## Open questions
 
-0. **Which repo is canonical?** willow-2.0 and willow-mcp each document the
-   other as the non-destination (Break 0). Nothing else here can be resolved
-   first, because every fix has two plausible homes until this does.
-1. Should willow-mcp's SOIL queue forward into Postgres, or should Grove read
-   both? B-28 says willow-mcp will not migrate the shared DB unilaterally — so
-   this needs an operator decision, not a patch.
+0. **Answered:** the destination is `willow-mcp` and its associated repos.
+   willow-2.0's README still says the opposite and should be corrected — it is
+   the one artifact actively pointing readers and agents the wrong way.
+1. Does willow-mcp take ownership of the shared fleet Postgres (lifting B-28
+   with operator consent), or does the fleet move onto its SOIL store and
+   consumers get repointed? willow-mcp's own design leans toward the second.
+   Either way **Grove needs repointing at the port**, which is the concrete task
+   behind the empty pane.
 2. Who owns `grove.*` after consolidation? Two independent bootstraps currently
    race, and Break 0 means there is no agreed answer to appeal to.
 3. Should `safe-app-store` gain enforcement, or should manifests move to where

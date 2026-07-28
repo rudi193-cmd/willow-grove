@@ -87,11 +87,19 @@ unilaterally, B-28); the orphaning was not. The `kind` vocabularies have also
 drifted (`needs_consent` vs `consent`), so repointing the datastore alone would
 not merge them.
 
-**Options, all acceptable; silently doing the first is not.**
-- Read Postgres only — **and label the pane with that scope**, so a reader knows
-  willow-mcp escalations are not included.
-- Read both, tagging each item with its source.
-- Drive the consolidation first and read one.
+**With the migration direction settled, this has a preferred answer.**
+willow-mcp's SOIL queue is the *port*; willow-2.0's Postgres table is the
+original. A fresh build should target the port, not the origin:
+
+- **Read willow-mcp's SOIL queue** — the destination, and the only one that
+  survives the migration.
+- Read both *during* the migration, tagging each item with its source, and say
+  in the UI which is which.
+- Read willow-2.0's Postgres only — **and label the pane with that scope**, so a
+  reader knows willow-mcp escalations are excluded. This is what today's Grove
+  does, minus the label.
+
+Silently doing the last one is what produces an empty pane on a stock install.
 
 **Judgement call**, not a correctness requirement — except the labelling, which
 is constraint 1 applied to scope rather than to reachability.
@@ -142,12 +150,12 @@ A fresh public build makes **three** unless the ownership question is settled
 first.
 
 **Check.** For each subsystem, name the one repo that owns it before writing it.
-If the answer is "two", stop and resolve that first — and note that today the
-answer is *"two, and they disagree"*: willow-2.0's README declares willow-mcp
-archived while willow-mcp holds the plan to migrate out of willow-2.0, and both
-are actively committed to ([`FLEET_SEAMS.md` Break 0](FLEET_SEAMS.md#break-0--ownership-is-contested-and-everything-below-follows-from-it)).
-Until that is settled, "which repo owns it" has no answer to appeal to, and a
-fresh build inherits the ambiguity rather than escaping it. `NESTOR_ON_GROVE.md` (in
+If the answer is "two", the destination is **`willow-mcp` and its associated
+repos** — the good from willow-2.0 moves there, and willow-2.0 was a building
+block rather than the target ([`FLEET_SEAMS.md` Break 0](FLEET_SEAMS.md#break-0--the-migration-has-a-direction-one-readme-has-not-caught-up)). Beware
+willow-2.0's README, which still declares willow-mcp archived; that line is stale
+and backwards. Port *from* willow-2.0, target willow-mcp's surfaces, and do not
+build a fresh dependency on willow-2.0's schema. `NESTOR_ON_GROVE.md` (in
 this repo, when the survey completes) measures which duplicates are genuinely
 the same code versus which only look alike — use it rather than eyeballing.
 
