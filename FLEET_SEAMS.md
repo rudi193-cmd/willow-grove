@@ -412,8 +412,19 @@ claim about `willow-mcp`, `willow-2.0` and `safe-app-store`, including all
 agents, one per repo, each instructed to cite `file:line` and to say plainly when
 something could not be found. Spot-check before acting on any single one.
 
-**Corrected during the survey, recorded so it is not re-derived:** an earlier
-working hypothesis held that *nothing* writes `human_required_queue`, and
-therefore that Grove's pane had never displayed a real item. That is **wrong** —
-willow-2.0 writes it (`core/human_required.py:178`). The link between willow-2.0
-and Grove works. Only willow-mcp's half is orphaned.
+**Two corrections, recorded so they are not re-derived.**
+
+1. An early hypothesis held that *nothing* writes `human_required_queue`, and so
+   Grove's pane had never displayed a real item. Wrong — willow-2.0 writes it
+   (`core/human_required.py:178`), and on a full install the link works.
+2. This document then called willow-mcp's queue "orphaned" and willow-2.0's "the
+   one that works". Also wrong, and in a more instructive way: willow-mcp's is
+   the **port** (`human_loop.py:14-22`), willow-2.0's is the origin, and Grove
+   is the consumer that has not been repointed.
+
+The second error came from the method. The survey agents were asked *where code
+is*, which cannot distinguish a port from an original — both look like live
+implementations. Only knowing the migration's intended direction separates them,
+and that came from the operator, not the repositories. **Treat every ownership
+claim in this document as "where it currently lives"; ask a human which way the
+migration runs before inferring anything else from it.**
